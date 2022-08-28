@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: ${NAME}
-        image: jr/caza:testing
+        image: jrroman/${NAME}:latest
         securityContext:
-          runAsUser: 0
+          privileged: true
