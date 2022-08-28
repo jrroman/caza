@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+    "fmt"
 	"log"
 	"net"
 	"os"
@@ -22,6 +23,7 @@ import (
 var NativeEndian binary.ByteOrder
 
 func init() {
+
 	// Determine the endianness of the host machine to translate network addrs
 	buf := [2]byte{}
 	*(*uint16)(unsafe.Pointer(&buf[0])) = uint16(0xABCD)
@@ -78,7 +80,8 @@ func main() {
 
 	// Allow current process to lock memory for eBPF resources
 	if err := rlimit.RemoveMemlock(); err != nil {
-		log.Fatal(err)
+    fmt.Printf("error: %v", err)
+	  return	
 	}
 
 	// Load pre-compiled programs and maps into the kernel

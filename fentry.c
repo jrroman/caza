@@ -26,18 +26,18 @@
 struct sock_common {
         union {
                 struct {
-                        // skc_saddr is source IP address
-                        __be32 skc_saddr;
                         // skc_daddr is destination IP address
                         __be32 skc_daddr;
+                        // skc_saddr is source IP address
+                        __be32 skc_rcv_saddr;
                 };
         };
         union {
                 struct {
-                        // skc_sport is source TCP/UDP port
-                        __be16 skc_sport;
                         // skc_dport is destination TCP/UDP port
                         __be16 skc_dport;
+                        // skc_sport is source TCP/UDP port
+                        __be16 skc_num;
                 };
         };
         // skc_family is the network address family (2 for IPv4)
@@ -51,15 +51,6 @@ struct sock_common {
  */
 struct sock {
         struct sock_common __sk_common;
-} __attribute__((preserve_access_index));
-
-/**
- * struct tcp_sock is the Linux representation of a TCP socket.
- * This is a simplified copy of the kernel's struct tcp_sock.
- * For this example we only need srtt_us to read the smoothed RTT.
- */ 
-struct tcp_sock {
-        u32 srtt_us;
 } __attribute__((preserve_access_index));
 
 /**
@@ -101,21 +92,15 @@ int BPF_PROG(tcp_close, struct sock *sk) {
                 return 0;
         }
 
-        // input struct sock is a tcp_sock, so we can type cast
-        struct tcp_sock *ts = bpf_skc_to_tcp_sock(sk);
-        if (!ts) {
-                return 0;
-        }
-
         struct event *tcp_info;
         tcp_info = bpf_ringbuf_reserve(&events, sizeof(struct event), 0);
         if (!tcp_info) {
                 return 0;
         }
 
-        tcp_info->saddr = sk->__sk_common.skc_saddr;
+        tcp_info->saddr = sk->__sk_common.skc_rcv_saddr;
         tcp_info->daddr = sk->__sk_common.skc_daddr;
-        tcp_info->sport = sk->__sk_common.skc_sport;
+        tcp_info->sport = sk->__sk_common.skc_num;
         // ntohs converts u_short from TCP/IP network byte order to host byte order
         tcp_info->dport = bpf_ntohs(sk->__sk_common.skc_dport);
 
