@@ -1,4 +1,4 @@
-FROM golang:bullseye
+FROM golang:bullseye as builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -12,4 +12,12 @@ RUN apt update && \
         libclang-11-dev \
         && rm -rf /var/lib/apt/lists/*
 
-CMD ./start.sh
+RUN make build
+
+FROM amazonlinux:2
+
+WORKDIR /workspace
+
+COPY --from=builder /workspace/caza ./
+
+CMD ./caza
