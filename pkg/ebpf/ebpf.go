@@ -3,11 +3,12 @@ package ebpf
 import (
 	"bytes"
 	"context"
-	"cross-az-analysis/pkg/metrics"
 	"encoding/binary"
 	"errors"
 	"log"
 	"net"
+
+	"github.com/jrroman/caza/pkg/metrics"
 
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"

@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"cross-az-analysis/pkg/ebpf"
-	"cross-az-analysis/pkg/metrics"
+	"github.com/jrroman/caza/pkg/ebpf"
+	"github.com/jrroman/caza/pkg/metrics"
 )
 
 func main() {
