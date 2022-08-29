@@ -7,7 +7,7 @@ The goal of this project is to enable the observability of communication within 
 You have a private network with 4 subnets
 
 Subnet A owns the address range 10.1.0.0/16  
-Subnet B hwns the address range 10.2.0.0/16  
+Subnet B owns the address range 10.2.0.0/16  
 Subnet C owns the address range 10.4.0.0/16  
 Subnet D owns the address range 10.6.0.0/16  
 
