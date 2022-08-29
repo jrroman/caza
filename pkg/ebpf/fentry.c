@@ -1,4 +1,4 @@
-#include "vmlinux.h"
+#include "common.h"
 
 // bpf headers
 #include "bpf_endian.h"
@@ -8,17 +8,6 @@
 #define AF_INET 2 /* IPv4 address family */
 
 char _license[] SEC("license") = "Apache 2.0";
-
-/**
- * For CO-RE relocatable eBPF programs, __attribute__((preserve_access_index))
- * preserves the offset of the specified fields in the original kernel struct.
- * So here we don't need to include "vmlinux.h". Instead we only need to define
- * the kernel struct and their fields the eBPF program actually requires.
- *
- * Also note that BTF-enabled programs like fentry, fexit, fmod_ret, tp_btf,
- * lsm, etc. declared using the BPF_PROG macro can read kernel memory without
- * needing to call bpf_probe_read*().
- */
 
 /**
  * This struct creates a ring buffer data structure so we can store
