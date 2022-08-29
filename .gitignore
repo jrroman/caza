@@ -1,5 +1,6 @@
 # ignore all generated output
-bpf*
+bpf_bpfel*
+bpf_bpfeb*
 
 # ignore program binary
 caza
