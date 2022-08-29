@@ -8,11 +8,10 @@ import (
 	"log"
 	"net"
 
-	"github.com/jrroman/caza/pkg/metrics"
-
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/cilium/ebpf/rlimit"
+	"github.com/jrroman/caza/pkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -46,6 +45,48 @@ func readLoop(ctx context.Context, rd *ringbuf.Reader, ec chan bpfEvent) {
 	}
 }
 
+type NetworkLocale int
+
+const (
+	InNetwork NetworkLocale = iota
+	OutNetwork
+	ExternalNetwork
+)
+
+type NetworkMatch struct {
+	Name   string
+	Locale NetworkLocale
+}
+
+// First thing we have to do is identify if the address belongs to a network which
+// we own. If it does then we will return the network name and check if the destination
+// address also belongs to that network. If it does then we know the request stayed inside
+// the network in which the request originated.
+func findMatchingNetwork(networks map[string]*net.IPNet, src, dst net.IP) NetworkMatch {
+	match := NetworkMatch{}
+	for name, network := range networks {
+		match.Name = name
+		// If the src address does not live in the network continue to the next network
+		if !network.Contains(src) {
+			continue
+		}
+		// The src address belongs to the network, check if the destination address
+		// also belongs to that network. If the destination address belongs to the
+		// same network return "InNetwork" enum, if not return "OutNetwork enum
+		if network.Contains(dst) {
+			match.Locale = InNetwork
+		} else {
+			match.Locale = OutNetwork
+		}
+		return match
+	}
+	// If we get here it means that the src address did not belong to any of our
+	// networks so we can return "ExternalNetwork" enum
+	match.Name = ""
+	match.Locale = ExternalNetwork
+	return match
+}
+
 // We need to process the events being sent down the event channel. As a first stab
 // lets create an IP map it could look something like map[net.IP]struct{in out}
 func processEvents(ctx context.Context, ec chan bpfEvent, networks map[string]*net.IPNet) {
@@ -58,21 +99,16 @@ func processEvents(ctx context.Context, ec chan bpfEvent, networks map[string]*n
 	for event := range ec {
 		srcAddr, dstAddr := intToIP(event.Saddr), intToIP(event.Daddr)
 		srcPort, dstPort := event.Sport, event.Dport
-		for name, network := range networks {
-			labels := prometheus.Labels{"network": name}
-			// Identify where the srcAddr originates
-			if network.Contains(srcAddr) {
-				// check if the destination is in the same network
-				if network.Contains(dstAddr) {
-					metrics.InNetwork.With(labels).Inc()
-					log.Printf("in network %-15s %-6d -> %-15s %-6d",
-						srcAddr, srcPort, dstAddr, dstPort)
-					continue
-				}
-				metrics.OutNetwork.With(labels).Inc()
-				log.Printf("out network %-15s %-6d -> %-15s %-6d",
-					srcAddr, srcPort, dstAddr, dstPort)
-			}
+		log.Printf("%-15s %-6d -> %-15s %-6d",
+			srcAddr, srcPort, dstAddr, dstPort)
+		match := findMatchingNetwork(networks, srcAddr, dstAddr)
+		switch nl := match.Locale; nl {
+		case InNetwork:
+			metrics.InNetwork.With(prometheus.Labels{"network": match.Name}).Inc()
+		case OutNetwork:
+			metrics.OutNetwork.With(prometheus.Labels{"network": match.Name}).Inc()
+		case ExternalNetwork:
+			log.Println("A network which is not ours")
 		}
 	}
 }

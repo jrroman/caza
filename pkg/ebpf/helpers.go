@@ -35,8 +35,9 @@ func intToIP(ipNum uint32) net.IP {
 }
 
 // TODO pull this network data in from aws or whatever cloud provider we are utilizing
+// This will end up being in its own package so we can utilize the aws api
 func createNetworkMap() (map[string]*net.IPNet, error) {
-	cidrs := []string{"127.0.0.1/16", "192.168.0.0/16", "172.17.0.0/16"}
+	cidrs := []string{"127.0.0.1/32", "192.168.0.0/16", "172.17.0.0/16"}
 	netMap := make(map[string]*net.IPNet)
 	for idx, cidr := range cidrs {
 		_, ipNet, err := net.ParseCIDR(cidr)
