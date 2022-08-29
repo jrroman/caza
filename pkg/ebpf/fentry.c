@@ -1,10 +1,13 @@
-#include "common.h"
+#include "vmlinux.h"
 
 // bpf headers
 #include "bpf_endian.h"
+#include "bpf_helpers.h"
 #include "bpf_tracing.h"
 
 #define AF_INET 2 /* IPv4 address family */
+
+char _license[] SEC("license") = "Apache 2.0";
 
 /**
  * For CO-RE relocatable eBPF programs, __attribute__((preserve_access_index))
@@ -16,42 +19,6 @@
  * lsm, etc. declared using the BPF_PROG macro can read kernel memory without
  * needing to call bpf_probe_read*().
  */
-
-/**
- * struct sock_common is the minimal network layer representation of sockets.
- * This is a simplified copy of the kernel's struct sock_common.
- * This copy contains only the fields needed for this example to
- * fetch the source and destination port numbers and IP addresses.
- */
-struct sock_common {
-        union {
-                struct {
-                        // skc_daddr is destination IP address
-                        __be32 skc_daddr;
-                        // skc_saddr is source IP address
-                        __be32 skc_rcv_saddr;
-                };
-        };
-        union {
-                struct {
-                        // skc_dport is destination TCP/UDP port
-                        __be16 skc_dport;
-                        // skc_sport is source TCP/UDP port
-                        __be16 skc_num;
-                };
-        };
-        // skc_family is the network address family (2 for IPv4)
-        short unsigned int skc_family;
-} __attribute__((preserve_access_index)); /* Important for portability in ebpf */
-
-/**
- * struct sock is the network layer representation of sockets.
- * This is a simplified copy of the kernel's struct sock.
- * This copy is only needed to access struct sock_common.
- */
-struct sock {
-        struct sock_common __sk_common;
-} __attribute__((preserve_access_index));
 
 /**
  * This struct creates a ring buffer data structure so we can store
