@@ -4,6 +4,7 @@ DOCKER_REPOSITORY=jrroman
 DIR=$(shell cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 COMPILER_FLAGS="-O2 -g -Wall -Werror"
 COMPILER=clang-11
+EBPF_DIR=pkg/ebpf
 
 $(NAME): build
 
@@ -20,4 +21,4 @@ image-push: image
 	docker push $(DOCKER_REPOSITORY)/$(NAME):latest
 
 clean:
-	rm bpf_bpfel* bpf_bpfeb* $(NAME)
+	rm $(EBPF_DIR)/bpf_bpfel* $(EBPF_DIR)/bpf_bpfeb* $(NAME)
