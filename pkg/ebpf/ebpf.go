@@ -54,8 +54,7 @@ func processEvents(ctx context.Context, ec chan bpfEvent, networks map[string]*n
 		"Dest addr",
 		"Port",
 	)
-	select {
-	case event := <-ec:
+	for event := range ec {
 		srcAddr, dstAddr := intToIP(event.Saddr), intToIP(event.Daddr)
 		srcPort, dstPort := event.Sport, event.Dport
 		for name, network := range networks {
@@ -74,24 +73,23 @@ func processEvents(ctx context.Context, ec chan bpfEvent, networks map[string]*n
 					srcAddr, srcPort, dstAddr, dstPort)
 			}
 		}
-	case <-ctx.Done():
-		log.Println("Context complete, shutting down processing")
-		return
 	}
 }
 
-func Run(ctx context.Context) error {
+func Run(ctx context.Context) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	// Allow current process to lock memory for eBPF resources
 	if err := rlimit.RemoveMemlock(); err != nil {
-		return err
+		log.Printf("Remove memory lock: %v", err)
+		return
 	}
 
 	// Load pre-compiled programs and maps into the kernel
 	objs := bpfObjects{}
 	if err := loadBpfObjects(&objs, nil); err != nil {
-		return err
+		log.Printf("Load BPF objects: %v", err)
+		return
 	}
 	defer objs.Close()
 
@@ -99,7 +97,8 @@ func Run(ctx context.Context) error {
 		Program: objs.bpfPrograms.TcpClose,
 	})
 	if err != nil {
-		return err
+		log.Printf("Attach link tracing: %v", err)
+		return
 	}
 	defer link.Close()
 
@@ -114,17 +113,18 @@ func Run(ctx context.Context) error {
 	*/
 	rd, err := ringbuf.NewReader(objs.bpfMaps.Events)
 	if err != nil {
-		return err
+		log.Printf("Ringbuf new reader: %v", err)
+		return
 	}
 	defer rd.Close()
 
 	networks, err := createNetworkMap()
 	if err != nil {
-		return err
+		log.Printf("Create network map: %v", err)
+		return
 	}
 
 	eventChan := make(chan bpfEvent)
 	go readLoop(ctx, rd, eventChan)
 	processEvents(ctx, eventChan, networks)
-	return nil
 }

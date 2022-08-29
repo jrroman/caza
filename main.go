@@ -23,7 +23,14 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	if err := ebpf.Run(ctx); err != nil {
-		log.Fatal(err)
+	go ebpf.Run(ctx)
+
+	select {
+	case <-stopChan:
+		log.Println("signal caught, shutting down")
+		cancel()
+	case <-ctx.Done():
+		log.Println("context complete")
+		return
 	}
 }
