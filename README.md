@@ -2,11 +2,6 @@
 
 **WIP**
 
-**TODO:**
-
-- tests
-- improve reported metrics
-
 The goal of this project is to enable the observability of communication within your networks. As engineers we are always trying to improve our infrastructure from a performance and cost standpoint. A large cost for many of us is zone to zone communication in our private networks. In AWS for instance you are charged on what they call "Regional Data Transfer" what this means is that they are billing you based on how the services in your network are communicating, example:
 
 You have a private network with 4 subnets
@@ -55,3 +50,8 @@ sudo ./caza
 
 make image-push
 ```
+
+**TODO:**
+
+- tests
+- improve reported metrics
