@@ -25,7 +25,11 @@ struct {
  * struct event is the structure that will be submitted to userspace over
  * a ring buffer. It will emit struct event's type info into the ELF produced
  * by bpf2go so we can generate a go type from it.
- *
+ * 
+ * We specify ports for src and dst in our event structure however they are currently
+ * unused by the the userland golang program. In the future we could potentially
+ * use the dst port to signify which service the src addr was speaking with when
+ * the network request happened.
  */
 struct event {
         u16 sport;

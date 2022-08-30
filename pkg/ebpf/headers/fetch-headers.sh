@@ -20,4 +20,4 @@ curl -sL "https://github.com/libbpf/libbpf/archive/refs/tags/v${LIBBPF_VERSION}.
     tar -xz --xform='s#.*/##' "${headers[@]}"
 
 # create vmlinux header file based on host kernel
-sudo bpftool btf dump file /sys/kernel/btf/vmlinux format c > "$DIR/vmlinux.h"
+# sudo bpftool btf dump file /sys/kernel/btf/vmlinux format c > "$DIR/vmlinux.h"
