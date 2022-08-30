@@ -11,6 +11,7 @@ import (
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/cilium/ebpf/rlimit"
+	"github.com/jrroman/caza/pkg/config"
 	"github.com/jrroman/caza/pkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -113,7 +114,7 @@ func processEvents(ctx context.Context, ec chan bpfEvent, networks map[string]*n
 	}
 }
 
-func Run(ctx context.Context) {
+func Run(ctx context.Context, cfg *config.Config) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	// Allow current process to lock memory for eBPF resources

@@ -3,7 +3,9 @@ module github.com/jrroman/caza
 go 1.19
 
 require (
+	github.com/aws/aws-sdk-go v1.44.87
 	github.com/cilium/ebpf v0.9.1
+	github.com/jessevdk/go-flags v1.5.0
 	github.com/prometheus/client_golang v1.13.0
 )
 
