@@ -32,14 +32,6 @@ func intToIP(ipNum uint32) net.IP {
 	return ip
 }
 
-func mockAwsNetwork() map[string]*net.IPNet {
-	_, ipNet, _ := net.ParseCIDR("172.0.0.1/8")
-	awsNetworks := map[string]*net.IPNet{
-		"aws": ipNet,
-	}
-	return awsNetworks
-}
-
 // TODO pull this network data in from aws or whatever cloud provider we are utilizing
 // This will end up being in its own package so we can utilize the aws api
 func mergeNetworks(networks []map[string]*net.IPNet) (map[string]*net.IPNet, error) {

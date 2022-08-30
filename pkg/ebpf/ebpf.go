@@ -159,10 +159,6 @@ func processEvents(ctx context.Context, ec chan bpfEvent, networks map[string]*n
 	}
 }
 
-func getNetworks(cfg *config.Config) {
-
-}
-
 func Run(ctx context.Context, cfg *config.Config) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -174,7 +170,12 @@ func Run(ctx context.Context, cfg *config.Config) {
 	}
 
 	if cfg.CloudEnabled {
-		cloudNetworks, err := awscloud.GetNetworks(cfg)
+		awscc, err := awscloud.New(cfg)
+		if err != nil {
+			log.Printf("Aws cloud client: %v", err)
+			return
+		}
+		cloudNetworks, err := awscc.GetNetworks(cfg)
 		if err != nil {
 			log.Printf("Get networks: %v", err)
 			return
