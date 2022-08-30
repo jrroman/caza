@@ -38,12 +38,17 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go ebpf.Run(ctx, cfg)
+	go func() {
+		if err := ebpf.Run(ctx, cfg); err != nil {
+			log.Printf("Run %v", err)
+			cancel()
+		}
+	}()
 
 	select {
 	case <-stopChan:
 		log.Println("signal caught, shutting down")
-		cancel()
+		return
 	case <-ctx.Done():
 		log.Println("context complete")
 		return

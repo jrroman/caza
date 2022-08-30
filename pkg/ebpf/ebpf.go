@@ -159,38 +159,34 @@ func processEvents(ctx context.Context, ec chan bpfEvent, networks map[string]*n
 	}
 }
 
-func Run(ctx context.Context, cfg *config.Config) {
+func Run(ctx context.Context, cfg *config.Config) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
-	// TODO get all networks to be merged
 	var networkSlice []map[string]*net.IPNet
 	if len(cfg.Networks) != 0 {
 		networkSlice = append(networkSlice, cfg.Networks)
 	}
-
 	if cfg.CloudEnabled {
 		awscc, err := awscloud.New(cfg)
 		if err != nil {
-			log.Printf("Aws cloud client: %v", err)
-			return
+			return err
 		}
 		cloudNetworks, err := awscc.GetNetworks(cfg)
 		if err != nil {
-			log.Printf("Get networks: %v", err)
-			return
+			return err
 		}
 		networkSlice = append(networkSlice, cloudNetworks)
 	}
-
 	allNetworks, err := mergeNetworks(networkSlice)
 	if err != nil {
-		log.Printf("Create network map: %v", err)
-		return
+		return err
 	}
 	log.Println(allNetworks)
-
 	eventChan := make(chan bpfEvent)
 	go runBpf(ctx, eventChan)
-	processEvents(ctx, eventChan, allNetworks)
+	go processEvents(ctx, eventChan, allNetworks)
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
