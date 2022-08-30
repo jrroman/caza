@@ -79,7 +79,6 @@ func readLoop(ctx context.Context, rd *ringbuf.Reader, ec chan bpfEvent) {
 			log.Printf("reading from reader: %s", err)
 			continue
 		}
-
 		// Parse the ringbuf event entry into a bpfEvent structure.
 		if err := binary.Read(bytes.NewBuffer(record.RawSample), NativeEndian, &event); err != nil {
 			log.Printf("parsing ringbuf event: %s", err)
@@ -97,7 +96,6 @@ func runBpf(ctx context.Context, ec chan bpfEvent) {
 		log.Printf("Remove memory lock: %v", err)
 		return
 	}
-
 	// Load pre-compiled programs and maps into the kernel
 	objs := bpfObjects{}
 	if err := loadBpfObjects(&objs, nil); err != nil {
@@ -105,7 +103,6 @@ func runBpf(ctx context.Context, ec chan bpfEvent) {
 		return
 	}
 	defer objs.Close()
-
 	link, err := link.AttachTracing(link.TracingOptions{
 		Program: objs.bpfPrograms.TcpClose,
 	})
@@ -114,7 +111,6 @@ func runBpf(ctx context.Context, ec chan bpfEvent) {
 		return
 	}
 	defer link.Close()
-
 	/**
 	Read new tcp events from the ring buffer event data structure
 	struct event {

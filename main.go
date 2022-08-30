@@ -22,20 +22,16 @@ func main() {
 	if _, err := flags.Parse(&opts); err != nil {
 		log.Fatalf("Parsing command line options: %v", err)
 	}
-
 	cfg, err := config.New(opts)
 	if err != nil {
 		log.Fatalf("config error: %v", err)
 	}
-
 	stopChan := make(chan os.Signal, 1)
 	signal.Notify(stopChan, os.Interrupt, syscall.SIGTERM)
-
 	go func() {
 		err := metrics.Serve(opts.MetricsPort)
 		log.Fatalf("Prometheus listener %v", err)
 	}()
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
@@ -44,7 +40,6 @@ func main() {
 			cancel()
 		}
 	}()
-
 	select {
 	case <-stopChan:
 		log.Println("signal caught, shutting down")
