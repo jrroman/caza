@@ -18,7 +18,7 @@ import (
 )
 
 // $BPF_CLANG and $BPF_CFLAGS are set by the Makefile.
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS -type event bpf fentry.c -- -I./headers
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS -type event bpf ./src/fentry.c -- -I./src/headers
 
 type NetworkLocale int
 
@@ -132,26 +132,30 @@ func runBpf(ctx context.Context, ec chan bpfEvent) {
 // We need to process the events being sent down the event channel. As a first stab
 // lets create an IP map it could look something like map[net.IP]struct{in out}
 func processEvents(ctx context.Context, ec chan bpfEvent, networks map[string]*net.IPNet) {
-	log.Printf("%-15s %-6s -> %-15s %-6s",
+	log.Printf("%-15s %-6s -> %-15s %-6s %-6s",
 		"Src addr",
 		"Port",
 		"Dest addr",
 		"Port",
+		"Type",
 	)
 	for event := range ec {
 		srcAddr, dstAddr := intToIP(event.Saddr), intToIP(event.Daddr)
 		srcPort, dstPort := event.Sport, event.Dport
-		log.Printf("%-15s %-6d -> %-15s %-6d",
-			srcAddr, srcPort, dstAddr, dstPort)
+		var locale string
 		match := findMatchingNetwork(networks, srcAddr, dstAddr)
 		switch nl := match.Locale; nl {
 		case InNetwork:
 			metrics.InNetwork.With(prometheus.Labels{"network": match.Name}).Inc()
+			locale = "In"
 		case OutNetwork:
 			metrics.OutNetwork.With(prometheus.Labels{"network": match.Name}).Inc()
+			locale = "Out"
 		case ExternalNetwork:
-			log.Println("External network")
+			locale = "External"
 		}
+		log.Printf("%-15s %-6d -> %-15s %-6d %-6s",
+			srcAddr, srcPort, dstAddr, dstPort, locale)
 	}
 }
 
