@@ -29,3 +29,13 @@ kubectl apply -n "$NAMESPACE" -f <( \
     envsubst '$NAME $REGION' < \
     "$DIR/config.yaml"
 )
+
+# Apply Service Account
+# the role's json policy is located at ./aws/iam-policy.json
+IAM_ROLE_ARN="placeholder" # this is temporary
+kubectl apply -n "$NAMESPACE" -f <( \
+    NAME="${NAME}" \
+    ROLE_ARN="${IAM_ROLE_ARN}" \
+    envsubst '$NAME $ROLE_ARN' < \
+    "$DIR/service-account.yaml"
+)
