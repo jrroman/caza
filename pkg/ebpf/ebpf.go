@@ -20,46 +20,96 @@ import (
 // $BPF_CLANG and $BPF_CFLAGS are set by the Makefile.
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS -type event bpf ./src/fentry.c -- -I./src/headers
 
-type NetworkLocale int
+type NetworkRelation int
 
 const (
-	InNetwork NetworkLocale = iota
+	InNetwork NetworkRelation = iota
 	OutNetwork
 	ExternalNetwork
 )
 
-type NetworkMatch struct {
-	Name   string
-	Locale NetworkLocale
+type Network struct {
+	ip     net.IP
+	locale string
+}
+
+type NetworkPair struct {
+	src      Network
+	dst      Network
+	relation NetworkRelation
 }
 
 // First thing we have to do is identify if the address belongs to a network which
 // we own. If it does then we will return the network name and check if the destination
 // address also belongs to that network. If it does then we know the request stayed inside
 // the network in which the request originated.
-func findMatchingNetwork(networks map[string]*net.IPNet, src, dst net.IP) NetworkMatch {
-	match := NetworkMatch{}
-	for name, network := range networks {
-		match.Name = name
+func createNetworkPairRelation(networks map[string]*net.IPNet, srcIP, dstIP net.IP) *NetworkPair {
+	pair := &NetworkPair{
+		src: Network{ip: srcIP},
+		dst: Network{ip: dstIP},
+	}
+	for locale, network := range networks {
 		// If the src address does not live in the network continue to the next network
-		if !network.Contains(src) {
+		if !network.Contains(srcIP) {
 			continue
 		}
+		pair.src.locale = locale
 		// The src address belongs to the network, check if the destination address
 		// also belongs to that network. If the destination address belongs to the
 		// same network return "InNetwork" enum, if not return "OutNetwork enum
-		if network.Contains(dst) {
-			match.Locale = InNetwork
+		if network.Contains(dstIP) {
+			pair.dst.locale = locale
+			pair.relation = InNetwork
 		} else {
-			match.Locale = OutNetwork
+			pair.relation = OutNetwork
 		}
-		return match
+		return pair
 	}
 	// If we get here it means that the src address did not belong to any of our
 	// networks so we can return "ExternalNetwork" enum
-	match.Name = ""
-	match.Locale = ExternalNetwork
-	return match
+	pair.relation = ExternalNetwork
+	return pair
+}
+
+func findNetworkProximity(pair *NetworkPair) string {
+	var relation string
+	switch pair.relation {
+	case InNetwork:
+		// Both ip's belong to the same network so just use src
+		labels := prometheus.Labels{"zone": pair.src.locale}
+		metrics.InNetwork.With(labels).Inc()
+		relation = "In"
+	case OutNetwork:
+		labels := prometheus.Labels{
+			"src_zone": pair.src.locale,
+			"dst_zone": pair.dst.locale,
+		}
+		metrics.OutNetwork.With(labels).Inc()
+		relation = "Out"
+	case ExternalNetwork:
+		relation = "External"
+	}
+	return relation
+}
+
+// We need to process the events being sent down the event channel. As a first stab
+// lets create an IP map it could look something like map[net.IP]struct{in out}
+func processEvents(ctx context.Context, ec chan bpfEvent, networks map[string]*net.IPNet) {
+	log.Printf("%-15s %-6s -> %-15s %-6s %-6s",
+		"Src addr",
+		"Port",
+		"Dest addr",
+		"Port",
+		"Type",
+	)
+	for event := range ec {
+		srcAddr, dstAddr := intToIP(event.Saddr), intToIP(event.Daddr)
+		srcPort, dstPort := event.Sport, event.Dport
+		pair := createNetworkPairRelation(networks, srcAddr, dstAddr)
+		relation := findNetworkProximity(pair)
+		log.Printf("%-15s %-6d -> %-15s %-6d %-6s",
+			srcAddr, srcPort, dstAddr, dstPort, relation)
+	}
 }
 
 // We need to read the events being sent from our fentry.c program via ringbuffer.
@@ -127,36 +177,6 @@ func runBpf(ctx context.Context, ec chan bpfEvent) {
 	}
 	defer rd.Close()
 	readLoop(ctx, rd, ec)
-}
-
-// We need to process the events being sent down the event channel. As a first stab
-// lets create an IP map it could look something like map[net.IP]struct{in out}
-func processEvents(ctx context.Context, ec chan bpfEvent, networks map[string]*net.IPNet) {
-	log.Printf("%-15s %-6s -> %-15s %-6s %-6s",
-		"Src addr",
-		"Port",
-		"Dest addr",
-		"Port",
-		"Type",
-	)
-	for event := range ec {
-		srcAddr, dstAddr := intToIP(event.Saddr), intToIP(event.Daddr)
-		srcPort, dstPort := event.Sport, event.Dport
-		var locale string
-		match := findMatchingNetwork(networks, srcAddr, dstAddr)
-		switch nl := match.Locale; nl {
-		case InNetwork:
-			metrics.InNetwork.With(prometheus.Labels{"network": match.Name}).Inc()
-			locale = "In"
-		case OutNetwork:
-			metrics.OutNetwork.With(prometheus.Labels{"network": match.Name}).Inc()
-			locale = "Out"
-		case ExternalNetwork:
-			locale = "External"
-		}
-		log.Printf("%-15s %-6d -> %-15s %-6d %-6s",
-			srcAddr, srcPort, dstAddr, dstPort, locale)
-	}
 }
 
 func Run(ctx context.Context, cfg *config.Config) error {
