@@ -3,4 +3,4 @@ bpf_bpfel*
 bpf_bpfeb*
 
 # ignore program binary
-caza
+caza-bin
