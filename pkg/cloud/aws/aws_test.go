@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
+	"github.com/jrroman/caza/internal/testutils"
 )
 
 var (
@@ -32,12 +33,6 @@ func (c mockEC2Client) DescribeSubnets(input *ec2.DescribeSubnetsInput) (*ec2.De
 	return c.response, nil
 }
 
-// TODO create test helpers
-func createIPNetHelper(cidrBlock string) *net.IPNet {
-	_, ipNet, _ := net.ParseCIDR(cidrBlock)
-	return ipNet
-}
-
 func TestGetNetworks(t *testing.T) {
 	cases := []struct {
 		name      string
@@ -49,7 +44,7 @@ func TestGetNetworks(t *testing.T) {
 			name:  "valid describe subnets",
 			vpcID: "abc123",
 			expect: map[string]*net.IPNet{
-				"us-east-1a": createIPNetHelper("10.0.0.1/16"),
+				"us-east-1a": testutils.CreateIPNetHelper("10.0.0.1/16"),
 			},
 			wantError: false,
 		},

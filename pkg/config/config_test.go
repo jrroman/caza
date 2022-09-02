@@ -6,16 +6,12 @@ import (
 	"testing"
 
 	"github.com/jrroman/caza/internal"
+	"github.com/jrroman/caza/internal/testutils"
 )
 
 var (
 	maskBits = 32
 )
-
-func createIPNetHelper(cidrBlock string) *net.IPNet {
-	_, ipNet, _ := net.ParseCIDR(cidrBlock)
-	return ipNet
-}
 
 func TestValidateNetworks(t *testing.T) {
 	cases := []struct {
@@ -28,7 +24,7 @@ func TestValidateNetworks(t *testing.T) {
 			name:          "single valid network string",
 			networkString: "local:127.0.0.1/32",
 			expect: map[string]*net.IPNet{
-				"local": createIPNetHelper("127.0.0.1/32"),
+				"local": testutils.CreateIPNetHelper("127.0.0.1/32"),
 			},
 			wantError: false,
 		},
@@ -36,8 +32,8 @@ func TestValidateNetworks(t *testing.T) {
 			name:          "multiple valid network string",
 			networkString: "local:127.0.0.1/32,router:192.168.0.0/16",
 			expect: map[string]*net.IPNet{
-				"local":  createIPNetHelper("127.0.0.1/32"),
-				"router": createIPNetHelper("192.168.0.0/16"),
+				"local":  testutils.CreateIPNetHelper("127.0.0.1/32"),
+				"router": testutils.CreateIPNetHelper("192.168.0.0/16"),
 			},
 			wantError: false,
 		},
@@ -100,8 +96,8 @@ func TestValidateConfig(t *testing.T) {
 			expect: &Config{
 				CloudEnabled: false,
 				Networks: map[string]*net.IPNet{
-					"local":  createIPNetHelper("127.0.0.1/32"),
-					"router": createIPNetHelper("192.168.0.0/16"),
+					"local":  testutils.CreateIPNetHelper("127.0.0.1/32"),
+					"router": testutils.CreateIPNetHelper("192.168.0.0/16"),
 				},
 				Region: "",
 				VpcID:  "",

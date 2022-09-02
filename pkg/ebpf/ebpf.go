@@ -87,30 +87,31 @@ func createNetworkPairRelation(networks map[string]*net.IPNet, pair *NetworkPair
 	return pair
 }
 
-func findNetworkProximity(pair *NetworkPair) string {
-	var relation string
+func reportNetworkProximity(pair *NetworkPair) string {
+	var proximity string
 	switch pair.proximity {
 	case InNetwork:
 		// Both ip's belong to the same network so just use src
 		labels := prometheus.Labels{"zone": pair.src.locale}
 		metrics.InNetwork.With(labels).Inc()
-		relation = "In"
+		proximity = "In"
 	case OutNetwork:
 		labels := prometheus.Labels{
 			"src_zone": pair.src.locale,
 			"dst_zone": pair.dst.locale,
 		}
 		metrics.OutNetwork.With(labels).Inc()
-		relation = "Out"
+		proximity = "Out"
 	case ExternalNetwork:
-		relation = "External"
+		proximity = "External"
 	}
-	return relation
+	return proximity
 }
 
 // We need to process the events being sent down the event channel. As a first stab
 // lets create an IP map it could look something like map[net.IP]struct{in out}
 func processEvents(ctx context.Context, ec chan bpfEvent, networks map[string]*net.IPNet) {
+	log.Printf("Processing events for networks:\n%v", networks)
 	log.Printf("%-15s %-6s -> %-15s %-6s %-6s",
 		"Src addr",
 		"Port",
@@ -123,9 +124,9 @@ func processEvents(ctx context.Context, ec chan bpfEvent, networks map[string]*n
 		srcPort, dstPort := event.Sport, event.Dport
 		pair := createNetworkPairRelation(
 			networks, newNetworkPair(srcAddr, dstAddr, srcPort, dstPort))
-		relation := findNetworkProximity(pair)
+		proximity := reportNetworkProximity(pair)
 		log.Printf("%-15s %-6d -> %-15s %-6d %-6s",
-			srcAddr, srcPort, dstAddr, dstPort, relation)
+			srcAddr, srcPort, dstAddr, dstPort, proximity)
 	}
 }
 
@@ -212,15 +213,9 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		}
 		networkSlice = append(networkSlice, cloudNetworks)
 	}
-	allNetworks, err := mergeNetworks(networkSlice)
-	if err != nil {
-		return err
-	}
-	// TODO remove this debug log
-	log.Println(allNetworks)
 	eventChan := make(chan bpfEvent)
 	go eBPFRun(ctx, eventChan)
-	go processEvents(ctx, eventChan, allNetworks)
+	go processEvents(ctx, eventChan, mergeNetworkMaps(networkSlice))
 	<-ctx.Done()
 	return nil
 }
