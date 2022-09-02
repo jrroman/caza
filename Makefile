@@ -12,7 +12,10 @@ generate:
 	BPF_CLANG=$(COMPILER) BPF_CFLAGS=$(COMPILER_FLAGS) go generate "$(DIR)/..."
 
 build: generate
-	CGO_ENABLED=0 go build -o $(NAME) ./
+	CGO_ENABLED=0 go build -o $(NAME) $(DIR)/cmd/caza/...
+
+test:
+	go test -v ./...
 
 image:
 	docker build -t $(DOCKER_REPOSITORY)/$(NAME):latest .

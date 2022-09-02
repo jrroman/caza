@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"strings"
 
@@ -26,21 +27,20 @@ type Config struct {
 }
 
 // We need to ensure the CIDRs passed into opts.Networks are valid CIDR blocks
-func validateNetworksOpt(networkString string) (map[string]*net.IPNet, error) {
+func validateNetworks(networkString string) (map[string]*net.IPNet, error) {
 	// After splitting the slice of networks by comma we end up with a slice with
 	// a format that looks like the following e.g. [local:127.0.0.1/32, router:192.168.0.0/16]
 	networks := strings.Split(networkString, ",")
 	networkMap := make(map[string]*net.IPNet)
 	for _, network := range networks {
 		networkParts := strings.Split(network, ":")
-		// Ensure both portions of the string are populated
-		if networkParts[0] == "" || networkParts[1] == "" {
-			return nil, errors.New("missing network name or CIDR")
+		if len(networkParts) != 2 {
+			return nil, fmt.Errorf("invalid formatting of network string: %s", network)
 		}
-		name, cidrStr := networkParts[0], networkParts[1]
-		_, ipNet, err := net.ParseCIDR(cidrStr)
+		name, cidrString := networkParts[0], networkParts[1]
+		_, ipNet, err := net.ParseCIDR(cidrString)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invalid cidr block: %s", cidrString)
 		}
 		networkMap[name] = ipNet
 	}
@@ -59,7 +59,7 @@ func validateConfig(opts internal.Options) (*Config, error) {
 	}
 	var err error
 	if opts.Networks != "" {
-		cfg.Networks, err = validateNetworksOpt(opts.Networks)
+		cfg.Networks, err = validateNetworks(opts.Networks)
 		if err != nil {
 			return nil, err
 		}

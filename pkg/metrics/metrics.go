@@ -16,7 +16,7 @@ var (
 			Name:      "in_network_tx",
 			Help:      "Number of inter network transactions",
 		},
-		[]string{"network"},
+		[]string{"zone"},
 	)
 	OutNetwork = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -24,7 +24,7 @@ var (
 			Name:      "out_network_tx",
 			Help:      "Number of inter network transactions",
 		},
-		[]string{"network"},
+		[]string{"src_zone", "dst_zone"},
 	)
 )
 

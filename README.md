@@ -40,7 +40,7 @@ We do need clang in order to build this program. The Makefile uses `clang-11` bu
 ```sh
 make
 
-sudo ./caza
+sudo ./caza --networks "local:127.0.0.1/32,router:192.168.0.0/16"
 ```
 
 **Building and pushing an image**
@@ -55,3 +55,4 @@ make image-push
 
 - tests
 - improve reported metrics
+- github actions

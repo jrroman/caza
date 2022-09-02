@@ -1,16 +1,16 @@
 package util
 
 import (
-	"errors"
 	"fmt"
 	"os"
 )
 
+// EnsureEnvironmentSet is a quick check to tell us whether or not the envKey is
+// set as an environment variable if the value is unset we return an error to the user
 func EnsureEnvironmentSet(envKey string) error {
-	env, ok := os.LookupEnv(envKey)
+	_, ok := os.LookupEnv(envKey)
 	if !ok {
-		message := fmt.Sprintf("Environment %s is not set", envKey)
-		return errors.New(message)
+		return fmt.Errorf("environment %s is not set", envKey)
 	}
 	return nil
 }
