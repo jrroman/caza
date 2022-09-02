@@ -9,33 +9,23 @@ import (
 	awscloud "github.com/jrroman/caza/pkg/cloud/aws"
 	"github.com/jrroman/caza/pkg/config"
 	"github.com/jrroman/caza/pkg/ebpf"
+	"github.com/jrroman/caza/pkg/util"
 )
 
-func mergeNetworkMaps(networks []map[string]*net.IPNet) map[string]*net.IPNet {
-	// if there is only one network return it
-	if len(networks) == 1 {
-		return networks[0]
-	}
-	merged := make(map[string]*net.IPNet)
-	for _, nm := range networks {
-		for name, network := range nm {
-			merged[name] = network
-		}
-	}
-	return merged
-}
-
+// Server specifies some private fields which are used in managing the runtime of
+// the server. Done is used to initiate shutdown of the server and gracePeriod is the
+// amount of time to wait prior to a full exit of main
 type Server struct {
-	done      chan bool
-	graceTime time.Duration
-	startTime time.Time
+	done        chan bool
+	gracePeriod time.Duration
+	startTime   time.Time
 }
 
-func New() *Server {
+func New(gracefulTimeout time.Duration) *Server {
 	return &Server{
-		done:      make(chan bool),
-		graceTime: time.Second * 2,
-		startTime: time.Now(),
+		done:        make(chan bool),
+		gracePeriod: gracefulTimeout,
+		startTime:   time.Now(),
 	}
 }
 
@@ -44,7 +34,7 @@ func (s *Server) Shutdown() {
 	log.Printf("caza ran for %v; server state: stopping", duration)
 	s.done <- true
 	// Allow time for routines to stop
-	time.Sleep(s.graceTime)
+	time.Sleep(s.gracePeriod)
 }
 
 func (s *Server) Run(ctx context.Context, cfg *config.Config) error {
@@ -71,7 +61,7 @@ func (s *Server) Run(ctx context.Context, cfg *config.Config) error {
 	}
 	eBPFEventChannel := make(chan *ebpf.NetworkPair)
 	go ebpf.LoadAndRun(ctx, eBPFEventChannel)
-	go ebpf.ProcessEvents(eBPFEventChannel, mergeNetworkMaps(networkSlice))
+	go ebpf.ProcessEvents(eBPFEventChannel, util.MergeNetworkMaps(networkSlice))
 	<-ctx.Done()
 	return nil
 }

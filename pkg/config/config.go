@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/jrroman/caza/internal"
 )
@@ -15,6 +16,8 @@ type Config struct {
 	// If this value is false the program will run only with the networks specified
 	// within our Networks slice above
 	CloudEnabled bool
+	// Length of time to allow processes to exit gracefully
+	GraceTime time.Duration
 	// Networks is an optional list of net.IPNet. If you are also pulling subnet
 	// network data from a cloud provider the nework CIDRs specified here will
 	// added to the list pulled from the cloud
@@ -54,6 +57,7 @@ func validateConfig(opts internal.Options) (*Config, error) {
 	}
 	cfg := &Config{
 		CloudEnabled: opts.CloudEnabled,
+		GraceTime:    opts.GraceTime,
 		Region:       opts.Region,
 		VpcID:        opts.VpcID,
 	}
