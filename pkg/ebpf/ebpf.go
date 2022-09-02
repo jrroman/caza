@@ -167,11 +167,11 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		networkSlice = append(networkSlice, cfg.Networks)
 	}
 	if cfg.CloudEnabled {
-		awscc, err := awscloud.New(cfg)
+		awscc, err := awscloud.New(cfg.Region)
 		if err != nil {
 			return err
 		}
-		cloudNetworks, err := awscc.GetNetworks(cfg)
+		cloudNetworks, err := awscc.GetNetworks(cfg.VpcID)
 		if err != nil {
 			return err
 		}
@@ -185,8 +185,6 @@ func Run(ctx context.Context, cfg *config.Config) error {
 	eventChan := make(chan bpfEvent)
 	go runBpf(ctx, eventChan)
 	go processEvents(ctx, eventChan, allNetworks)
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	}
+	<-ctx.Done()
+	return nil
 }

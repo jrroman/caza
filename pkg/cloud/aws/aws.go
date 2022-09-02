@@ -3,8 +3,6 @@ package awscloud
 import (
 	"net"
 
-	"github.com/jrroman/caza/pkg/config"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -20,9 +18,9 @@ type AwsCloudClient struct {
 	ec2 ec2iface.EC2API
 }
 
-func New(cfg *config.Config) (*AwsCloudClient, error) {
+func New(region string) (*AwsCloudClient, error) {
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(cfg.Region),
+		Region: aws.String(region),
 	})
 	if err != nil {
 		return nil, err
@@ -32,12 +30,12 @@ func New(cfg *config.Config) (*AwsCloudClient, error) {
 	}, nil
 }
 
-func (cc *AwsCloudClient) GetNetworks(cfg *config.Config) (map[string]*net.IPNet, error) {
+func (cc *AwsCloudClient) GetNetworks(vpcID string) (map[string]*net.IPNet, error) {
 	input := &ec2.DescribeSubnetsInput{
 		Filters: []*ec2.Filter{
 			{
 				Name:   aws.String("vpc-id"),
-				Values: aws.StringSlice([]string{cfg.VpcID}),
+				Values: aws.StringSlice([]string{vpcID}),
 			},
 		},
 	}

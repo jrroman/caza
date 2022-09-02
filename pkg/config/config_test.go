@@ -12,7 +12,7 @@ var (
 	maskBits = 32
 )
 
-func createIpNetHelper(cidrBlock string) *net.IPNet {
+func createIPNetHelper(cidrBlock string) *net.IPNet {
 	_, ipNet, _ := net.ParseCIDR(cidrBlock)
 	return ipNet
 }
@@ -28,7 +28,7 @@ func TestValidateNetworks(t *testing.T) {
 			name:          "single valid network string",
 			networkString: "local:127.0.0.1/32",
 			expect: map[string]*net.IPNet{
-				"local": createIpNetHelper("127.0.0.1/32"),
+				"local": createIPNetHelper("127.0.0.1/32"),
 			},
 			wantError: false,
 		},
@@ -36,8 +36,8 @@ func TestValidateNetworks(t *testing.T) {
 			name:          "multiple valid network string",
 			networkString: "local:127.0.0.1/32,router:192.168.0.0/16",
 			expect: map[string]*net.IPNet{
-				"local":  createIpNetHelper("127.0.0.1/32"),
-				"router": createIpNetHelper("192.168.0.0/16"),
+				"local":  createIPNetHelper("127.0.0.1/32"),
+				"router": createIPNetHelper("192.168.0.0/16"),
 			},
 			wantError: false,
 		},
@@ -100,8 +100,8 @@ func TestValidateConfig(t *testing.T) {
 			expect: &Config{
 				CloudEnabled: false,
 				Networks: map[string]*net.IPNet{
-					"local":  createIpNetHelper("127.0.0.1/32"),
-					"router": createIpNetHelper("192.168.0.0/16"),
+					"local":  createIPNetHelper("127.0.0.1/32"),
+					"router": createIPNetHelper("192.168.0.0/16"),
 				},
 				Region: "",
 				VpcID:  "",
