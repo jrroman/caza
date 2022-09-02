@@ -14,6 +14,9 @@ generate:
 build: generate
 	CGO_ENABLED=0 go build -o $(NAME) $(DIR)/cmd/caza/...
 
+test:
+	go test -v ./...
+
 image:
 	docker build -t $(DOCKER_REPOSITORY)/$(NAME):latest .
 
